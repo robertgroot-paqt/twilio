@@ -5,6 +5,8 @@ namespace NotificationChannels\Twilio\Tests\Unit;
 use Illuminate\Contracts\Events\Dispatcher;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryTestCase;
+use Mockery\LegacyMockInterface;
+use Mockery\MockInterface;
 use NotificationChannels\Twilio\Exceptions\CouldNotSendNotification;
 use NotificationChannels\Twilio\Twilio;
 use NotificationChannels\Twilio\TwilioCallMessage;
@@ -20,19 +22,13 @@ use Twilio\Rest\Client as TwilioService;
 
 class TwilioTest extends MockeryTestCase
 {
-    /** @var Twilio */
-    protected $twilio;
+    protected Twilio|MockInterface|LegacyMockInterface $twilio;
 
-    /** @var TwilioService */
-    protected $twilioService;
+    protected TwilioService|MockInterface|LegacyMockInterface $twilioService;
 
-    /** @var Dispatcher */
-    protected $dispatcher;
+    protected Dispatcher|MockInterface|LegacyMockInterface $dispatcher;
 
-    /**
-     * @var TwilioConfig
-     */
-    protected $config;
+    protected TwilioConfig|MockInterface|LegacyMockInterface $config;
 
     public function setUp(): void
     {
@@ -41,6 +37,9 @@ class TwilioTest extends MockeryTestCase
         $this->twilioService = Mockery::mock(TwilioService::class);
         $this->dispatcher = Mockery::mock(Dispatcher::class);
         $this->config = Mockery::mock(TwilioConfig::class);
+        $this->config->allows()
+            ->isShortenUrlsEnabled()
+            ->andReturn(false);
 
         $this->twilioService->messages = Mockery::mock(MessageList::class);
         $this->twilioService->calls = Mockery::mock(CallList::class);
@@ -192,6 +191,10 @@ class TwilioTest extends MockeryTestCase
     /** @test */
     public function it_can_send_a_call_to_twilio()
     {
+        $this->config->shouldReceive('getDebugTo')
+            ->once()
+            ->andReturn(null);
+
         $message = new TwilioCallMessage('http://example.com');
         $message->from = '+2222222222';
         $message->status(TwilioCallMessage::STATUS_CANCELED);
@@ -277,8 +280,8 @@ class TwilioTest extends MockeryTestCase
         $this->twilioService->messages->shouldReceive('create')
             ->atLeast()->once()
             ->with($debugTo, [
-                'from' => '+1234567890',
                 'body' => 'Message text',
+                'from' => '+1234567890',
                 'statusCallback' => 'http://example.com',
                 'statusCallbackMethod' => 'PUT',
                 'applicationSid' => 'ABCD1234',

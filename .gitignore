@@ -24,6 +24,7 @@ composer.lock
 phpunit.phar
 /phpunit.xml
 .phpunit.result.cache
+.phpunit.cache
 
 # build
 build
